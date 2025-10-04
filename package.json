@@ -1,8 +1,9 @@
 {
   "name": "test-proxy",
   "version": "1.1.0",
-  "description": "Render-compatible proxy with cache and CORS support",
+  "description": "Render-compatible proxy with cache, POST/JSON, and fixed CORS support",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
