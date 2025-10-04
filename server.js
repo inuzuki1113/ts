@@ -1,50 +1,47 @@
 import express from "express";
-import axios from "axios";
+import fetch from "node-fetch";
+import cors from "cors";
 import NodeCache from "node-cache";
 
 const app = express();
-const cache = new NodeCache({ stdTTL: 60 }); // 60秒キャッシュ
+const cache = new NodeCache({ stdTTL: 30 }); // キャッシュ30秒
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: "5mb" }));
-app.use(express.static("public"));
+app.use(cors());
+app.use(express.json());
 
-// ✅ 全CORS許可（ブラウザからも直接OK）
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
+// キャッシュ付きプロキシ
+app.use("/proxy", async (req, res) => {
+  const target = req.query.target;
+  if (!target) return res.status(400).send("Missing target URL");
 
-// ✅ プロキシ機能
-app.all("/proxy", async (req, res) => {
-  const target = req.query.url || req.body.url;
-  if (!target) return res.status(400).json({ error: "Missing 'url' parameter" });
-
-  const cacheKey = `${req.method}-${target}-${JSON.stringify(req.body)}`;
+  const cacheKey = `${req.method}:${target}:${JSON.stringify(req.body || {})}`;
   const cached = cache.get(cacheKey);
-  if (cached) return res.json({ fromCache: true, data: cached });
+  if (cached) {
+    console.log(`Cache hit for ${target}`);
+    return res.send(cached);
+  }
 
   try {
-    const response = await axios({
+    const options = {
       method: req.method,
-      url: target,
-      data: req.body,
-      headers: { "User-Agent": "RenderBrowserProxy/1.0" },
-      timeout: 10000
-    });
-    cache.set(cacheKey, response.data);
-    res.json({ fromCache: false, data: response.data });
+      headers: { "Content-Type": "application/json" },
+      body: req.method === "POST" ? JSON.stringify(req.body) : undefined,
+    };
+
+    const response = await fetch(target, options);
+    const text = await response.text();
+    cache.set(cacheKey, text);
+    res.send(text);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).send(`Error: ${err.message}`);
   }
 });
 
-// ✅ 確認ページ
 app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "public" });
+  res.send("✅ Proxy server is running on Render!");
 });
 
-app.listen(PORT, () => console.log(`✅ Proxy server running on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
