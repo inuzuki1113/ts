@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>新しいタブ</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; background: #fafafa; }
+    input, button, textarea { width: 100%; padding: .5em; margin-top: .5em; }
+    pre { background: #eee; padding: 1em; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>🌐 Render Proxy Test</h2>
+  <input id="url" placeholder="アクセスしたいURLを入力">
+  <textarea id="body" rows="4" placeholder="POSTするJSON（任意）"></textarea>
+  <button id="send">送信</button>
+  <pre id="out"></pre>
+
+  <script src="script.js"></script>
+</body>
+</html>
